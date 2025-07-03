@@ -248,6 +248,9 @@ def xml_report(base_prefix: str, path: str, xml_request: Optional[ET.Element],
         # Don't keep reference to ``item``, because VObject requires a lot of
         # memory.
         item, filters_matched = retrieved_items.pop(0)
+        logger.debug("lbt: filters_matched: %s and got item: %s",
+                     filters_matched, item.serialize())
+
         if filters and not filters_matched:
             try:
                 if not all(test_filter(collection_tag, item, filter_)
@@ -263,7 +266,9 @@ def xml_report(base_prefix: str, path: str, xml_request: Optional[ET.Element],
         found_props = []
         not_found_props = []
 
+        logger.debug("lbt: props: %s", props)
         for prop in props:
+            logger.debug("lbt: prop: %s", prop)
             element = ET.Element(prop.tag)
             if prop.tag == xmlutils.make_clark("D:getetag"):
                 element.text = item.etag
@@ -330,10 +335,16 @@ def _expand(
     vevent_component: vobject.base.Component = copy.copy(item.vobject_item)
     logger.info("Expanding event %s", item.href)
 
+    logger.debug("lbt: expanding element %s from %s to %s",
+                 ET.tostring(element, encoding='unicode'),
+                 time_range_start, time_range_end)
+
     # Split the vevents included in the component into one that contains the
     # recurrence information and others that contain a recurrence id to
     # override instances.
     vevent_recurrence, vevents_overridden = _split_overridden_vevents(vevent_component)
+    logger.debug("lbt: vevent_recurrence %s", vevent_recurrence)
+    logger.debug("lbt: vevents_overridden %s", vevents_overridden)
 
     dt_format = '%Y%m%dT%H%M%SZ'
     all_day_event = False
@@ -389,6 +400,10 @@ def _expand(
         rstart = start - duration if duration else start
         recurrences = rruleset.between(rstart, end, inc=True)
 
+        logger.debug("lbt: rruleset %s", rruleset)
+        logger.debug("lbt: between(%s, %s, inc=True)", rstart, end)
+        logger.debug("lbt: %d recurrences %s", len(recurrences), recurrences)
+
         _strip_component(vevent_component)
         _strip_single_event(vevent_recurrence, dt_format)
 
@@ -397,6 +412,7 @@ def _expand(
         for recurrence_dt in recurrences:
             recurrence_utc = recurrence_dt if all_day_event else recurrence_dt.astimezone(datetime.timezone.utc)
             logger.debug("Processing recurrence: %s (all_day_event: %s)", recurrence_utc, all_day_event)
+            logger.debug("lbt: recurrence_dt %s", recurrence_dt)
 
             # Apply time-range filter
             if time_range_start is not None and time_range_end is not None:
@@ -407,6 +423,8 @@ def _expand(
                     logger.debug("Recurrence %s filtered out by time-range", recurrence_utc)
                     continue
 
+            logger.debug("lbt: recurrence_dt %s is in range", recurrence_dt)
+
             # Check here for exdate
 
             # Check for overridden instances
@@ -414,6 +432,9 @@ def _expand(
 
             if not vevent:
                 # Create new instance from recurrence
+                logger.debug("lbt: No override - make an event for %s", recurrence_dt)
+
+                # We did not find an overridden instance, so create a new one
                 vevent = copy.deepcopy(vevent_recurrence)
 
                 # For all day events, the system timezone may influence the
@@ -440,6 +461,8 @@ def _expand(
             filtered_vevents.append(vevent)
 
         # Filter overridden and recurrence base events
+        logger.debug("lbt: recurring_vevents %s", filtered_vevents)
+
         if time_range_start is not None and time_range_end is not None:
             for vevent in vevents_overridden:
                 dtstart = vevent.dtstart.value
@@ -489,6 +512,8 @@ def _expand(
 
     # ToDo: Get rid of return vevent_recurrence if filtered_vevents is empty it's wrong behavior
     vevent_component.vevent_list = filtered_vevents if filtered_vevents else [vevent_recurrence]
+    logger.debug("lbt: vevent_component %s", vevent_component)
+
     element.text = vevent_component.serialize()
     logger.debug("Returning %d VEVENTs", len(vevent_component.vevent_list))
 
