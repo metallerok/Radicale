@@ -35,7 +35,7 @@ from urllib.parse import unquote, urlparse
 
 import vobject
 import vobject.base
-from vobject.base import ContentLine
+from vobject.base import Component, ContentLine
 
 import radicale.item as radicale_item
 from radicale import httputils, pathutils, storage, types, xmlutils
@@ -475,7 +475,7 @@ def _expand(
 
             if not vevent:
                 # Create new instance from recurrence
-                vevent = copy.deepcopy(base_vevent)
+                vevent = base_vevent.duplicate(base_vevent)
 
                 # For all day events, the system timezone may influence the
                 # results, so use recurrence_dt
