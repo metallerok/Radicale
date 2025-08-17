@@ -1,14 +1,13 @@
-# -*- coding: utf-8 -*-
-import json
-import sys
 import io
+import json
+import logging
+import sys
 from pathlib import Path
 from wsgiref.util import setup_testing_defaults
 
-from radicale.app import Application
 from radicale import config as rconfig
+from radicale.app import Application
 from radicale.storage import load as load_storage
-import logging
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("radicale").setLevel(logging.DEBUG)
