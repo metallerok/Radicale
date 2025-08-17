@@ -67,6 +67,7 @@ END:VEVENT
 END:VCALENDAR
 """
 
+
 def make_conf(tmp_path: Path) -> "rconfig.Configuration":
     cfg_path = tmp_path / "config"
     rights_path = tmp_path / "rights"
@@ -101,18 +102,19 @@ def make_conf(tmp_path: Path) -> "rconfig.Configuration":
     )
     return rconfig.load([(str(cfg_path), False)])
 
+
 def _mk_app(tmp_path: Path) -> Application:
     conf = make_conf(tmp_path)
-    load_storage(conf)  # ensure storage is initialized
+    load_storage(conf)
     return Application(conf)
 
+
 def _req(app, method, path, body=b"", content_type="text/xml"):
-    # Minimal WSGI request with sane defaults
     env = {}
     setup_testing_defaults(env)
     env.update({
         "REQUEST_METHOD": method,
-        "REMOTE_USER": "user",  # rights: allow-all matches this
+        "REMOTE_USER": "user",
         "PATH_INFO": path,
         "SCRIPT_NAME": "",
         "QUERY_STRING": "",
@@ -157,9 +159,11 @@ def test_expand_with_cache_and_item_copy_triggers_lock_path(tmp_path):
     root.mkdir(parents=True, exist_ok=True)
     (root / ".Radicale.props").write_text(json.dumps({"tag": "VCALENDAR"}), encoding="utf-8")
 
-    status, _, resp = _req(app, "PUT", "/user/testcal/recur.ics",
-                        body=CAL.encode("utf-8"),
-                        content_type="text/calendar")
+    status, _, resp = _req(
+        app, "PUT", "/user/testcal/recur.ics",
+        body=CAL.encode("utf-8"),
+        content_type="text/calendar"
+    )
 
     print(status)
     assert status.startswith(("201", "204"))

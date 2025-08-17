@@ -35,7 +35,7 @@ from urllib.parse import unquote, urlparse
 
 import vobject
 import vobject.base
-from vobject.base import Component, ContentLine
+from vobject.base import ContentLine
 
 import radicale.item as radicale_item
 from radicale import httputils, pathutils, storage, types, xmlutils
